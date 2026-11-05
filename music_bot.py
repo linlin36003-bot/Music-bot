@@ -5,8 +5,7 @@ import logging
 from pyrogram import Client, filters, enums
 from pyrogram.types import Message
 from pytgcalls import PyTgCalls
-from pytgcalls.types import MediaStream, AudioQuality, Update
-from pytgcalls.types.stream import StreamAudioEnded
+from pytgcalls.types import MediaStream, AudioQuality, Update, StreamEnded
 
 # ================== CONFIG ==================
 API_ID = int(os.environ.get("API_ID", "0"))
@@ -175,7 +174,7 @@ async def play_next(chat_id: int):
 # ================== STREAM ENDED HANDLER ==================
 @call.on_update()
 async def stream_handler(client, update: Update):
-    if isinstance(update, StreamAudioEnded):
+    if isinstance(update, StreamEnded):
         chat_id = update.chat_id
         await play_next(chat_id)
 
