@@ -113,12 +113,10 @@ STRINGS = {
     },
 }
 
-
 def t(user_id: int, key: str, **kwargs) -> str:
     lang = user_lang.get(user_id, "en")
     text = STRINGS.get(lang, STRINGS["en"]).get(key, key)
     return text.format(**kwargs) if kwargs else text
-
 
 # ================== HELPERS ==================
 async def is_admin(client, chat_id, user_id):
@@ -130,7 +128,6 @@ async def is_admin(client, chat_id, user_id):
         )
     except Exception:
         return False
-
 
 async def get_youtube_info(query: str):
     import yt_dlp
@@ -152,7 +149,6 @@ async def get_youtube_info(query: str):
             return info.get("title", "Unknown"), info.get("url")
 
     return await loop.run_in_executor(None, _extract)
-
 
 async def play_next(chat_id: int):
     if chat_id not in queue or not queue[chat_id]:
@@ -176,7 +172,6 @@ async def play_next(chat_id: int):
         logger.error(f"Play error: {e}")
         await play_next(chat_id)
 
-
 # ================== STREAM ENDED HANDLER ==================
 @call.on_update()
 async def stream_handler(client, update: Update):
@@ -184,18 +179,15 @@ async def stream_handler(client, update: Update):
         chat_id = update.chat_id
         await play_next(chat_id)
 
-
 # ================== COMMANDS ==================
 @bot.on_message(filters.command("start") & filters.private)
 async def cmd_start(client, message: Message):
     user_lang.setdefault(message.from_user.id, "en")
     await message.reply_text(t(message.from_user.id, "start"))
 
-
 @bot.on_message(filters.command("help"))
 async def cmd_help(client, message: Message):
     await message.reply_text(t(message.from_user.id, "help"))
-
 
 @bot.on_message(filters.command("lang"))
 async def cmd_lang(client, message: Message):
@@ -205,7 +197,6 @@ async def cmd_lang(client, message: Message):
         return
     user_lang[message.from_user.id] = args[1].lower()
     await message.reply_text(t(message.from_user.id, "lang_set"))
-
 
 @bot.on_message(filters.command("play") & filters.group)
 async def cmd_play(client, message: Message):
@@ -236,7 +227,6 @@ async def cmd_play(client, message: Message):
         except Exception as e:
             await status.edit_text(t(message.from_user.id, "error", err=str(e)))
 
-
 @bot.on_message(filters.command("pause") & filters.group)
 async def cmd_pause(client, message: Message):
     chat_id = message.chat.id
@@ -248,7 +238,6 @@ async def cmd_pause(client, message: Message):
         await message.reply_text(t(message.from_user.id, "paused"))
     except Exception as e:
         await message.reply_text(t(message.from_user.id, "error", err=str(e)))
-
 
 @bot.on_message(filters.command("resume") & filters.group)
 async def cmd_resume(client, message: Message):
@@ -262,7 +251,6 @@ async def cmd_resume(client, message: Message):
     except Exception as e:
         await message.reply_text(t(message.from_user.id, "error", err=str(e)))
 
-
 @bot.on_message(filters.command("skip") & filters.group)
 async def cmd_skip(client, message: Message):
     chat_id = message.chat.id
@@ -271,7 +259,6 @@ async def cmd_skip(client, message: Message):
         return
     await message.reply_text(t(message.from_user.id, "skipped"))
     await play_next(chat_id)
-
 
 @bot.on_message(filters.command("stop") & filters.group)
 async def cmd_stop(client, message: Message):
@@ -285,7 +272,6 @@ async def cmd_stop(client, message: Message):
     current.pop(chat_id, None)
     await message.reply_text(t(message.from_user.id, "stopped"))
 
-
 @bot.on_message(filters.command("song") & filters.group)
 async def cmd_song(client, message: Message):
     chat_id = message.chat.id
@@ -294,7 +280,6 @@ async def cmd_song(client, message: Message):
         return
     title, _ = current[chat_id]
     await message.reply_text(t(message.from_user.id, "song_info", title=title))
-
 
 @bot.on_message(filters.command("queue") & filters.group)
 async def cmd_queue(client, message: Message):
@@ -305,7 +290,6 @@ async def cmd_queue(client, message: Message):
         return
     items = "\n".join(f"{i+1}. {t[0]}" for i, t in enumerate(q[:20]))
     await message.reply_text(t(message.from_user.id, "queue_list", count=len(q), items=items))
-
 
 # ================== BROADCAST (OWNER ONLY) ==================
 @bot.on_message(filters.command("broadcast") & filters.private)
@@ -334,7 +318,6 @@ async def cmd_broadcast(client, message: Message):
 
     await status.edit_text(t(user_id, "broadcast_done", ok=ok, fail=fail))
 
-
 # ================== STARTUP ==================
 async def main():
     if not API_ID or not API_HASH or not BOT_TOKEN or not SESSION_STRING:
@@ -348,289 +331,6 @@ async def main():
     await call.start()
     print("✅ Bot is running!")
     await asyncio.Event().wait()
-
-
-if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except (KeyboardInterrupt, SystemExit):
-        print("👋 Bot stopped.")ser.id, "error", err=str(e)))
-
-
-@bot.on_message(filters.command("skip") & filters.group)
-async def cmd_skip(client, message: Message):
-    chat_id = message.chat.id
-    if chat_id not in active:
-        await message.reply_text(t(message.from_user.id, "not_in_vc"))
-        return
-    await message.reply_text(t(message.from_user.id, "skipped"))
-    await play_next(chat_id)
-
-
-@bot.on_message(filters.command("stop") & filters.group)
-async def cmd_stop(client, message: Message):
-    chat_id = message.chat.id
-    try:
-        await call.leave_group_call(chat_id)
-    except Exception:
-        pass
-    active.discard(chat_id)
-    queue.pop(chat_id, None)
-    current.pop(chat_id, None)
-    await message.reply_text(t(message.from_user.id, "stopped"))
-
-
-@bot.on_message(filters.command("song") & filters.group)
-async def cmd_song(client, message: Message):
-    chat_id = message.chat.id
-    if chat_id not in current:
-        await message.reply_text(t(message.from_user.id, "no_playing"))
-        return
-    title, _ = current[chat_id]
-    await message.reply_text(t(message.from_user.id, "song_info", title=title))
-
-
-@bot.on_message(filters.command("queue") & filters.group)
-async def cmd_queue(client, message: Message):
-    chat_id = message.chat.id
-    q = queue.get(chat_id, [])
-    if not q:
-        await message.reply_text(t(message.from_user.id, "no_queue"))
-        return
-    items = "\n".join(f"{i+1}. {t[0]}" for i, t in enumerate(q[:20]))
-    await message.reply_text(t(message.from_user.id, "queue_list", count=len(q), items=items))
-
-
-# ================== BROADCAST (OWNER ONLY) ==================
-@bot.on_message(filters.command("broadcast") & filters.private)
-async def cmd_broadcast(client, message: Message):
-    user_id = message.from_user.id
-
-    if user_id != OWNER_ID:
-        await message.reply_text(t(user_id, "owner_only"))
-        return
-
-    if len(message.command) < 2:
-        await message.reply_text("Usage: /broadcast <message>")
-        return
-
-    text = message.text.split(maxsplit=1)[1]
-    status = await message.reply_text(t(user_id, "broadcast_start"))
-
-    ok, fail = 0, 0
-    async for dialog in client.get_dialogs():
-        try:
-            await client.send_message(dialog.chat.id, text)
-            ok += 1
-            await asyncio.sleep(0.05)
-        except Exception:
-            fail += 1
-
-    await status.edit_text(t(user_id, "broadcast_done", ok=ok, fail=fail))
-
-
-# ================== STARTUP ==================
-async def main():
-    if not API_ID or not API_HASH or not BOT_TOKEN or not SESSION_STRING:
-        raise SystemExit("❌ Missing required env vars: API_ID, API_HASH, BOT_TOKEN, SESSION_STRING")
-
-    print("🚀 Starting user client...")
-    await user.start()
-    print("🚀 Starting bot client...")
-    await bot.start()
-    print("🚀 Starting PyTgCalls...")
-    await call.start()
-    print("✅ Bot is running!")
-    await asyncio.Event().wait()
-
-
-if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except (KeyboardInterrupt, SystemExit):
-        print("👋 Bot stopped.")ser.id, "error", err=str(e)))
-
-
-@bot.on_message(filters.command("skip") & filters.group)
-async def cmd_skip(client, message: Message):
-    chat_id = message.chat.id
-    if chat_id not in active:
-        await message.reply_text(t(message.from_user.id, "not_in_vc"))
-        return
-    await message.reply_text(t(message.from_user.id, "skipped"))
-    await play_next(chat_id)
-
-
-@bot.on_message(filters.command("stop") & filters.group)
-async def cmd_stop(client, message: Message):
-    chat_id = message.chat.id
-    try:
-        await call.leave_group_call(chat_id)
-    except Exception:
-        pass
-    active.discard(chat_id)
-    queue.pop(chat_id, None)
-    current.pop(chat_id, None)
-    await message.reply_text(t(message.from_user.id, "stopped"))
-
-
-@bot.on_message(filters.command("song") & filters.group)
-async def cmd_song(client, message: Message):
-    chat_id = message.chat.id
-    if chat_id not in current:
-        await message.reply_text(t(message.from_user.id, "no_playing"))
-        return
-    title, _ = current[chat_id]
-    await message.reply_text(t(message.from_user.id, "song_info", title=title))
-
-
-@bot.on_message(filters.command("queue") & filters.group)
-async def cmd_queue(client, message: Message):
-    chat_id = message.chat.id
-    q = queue.get(chat_id, [])
-    if not q:
-        await message.reply_text(t(message.from_user.id, "no_queue"))
-        return
-    items = "\n".join(f"{i+1}. {t[0]}" for i, t in enumerate(q[:20]))
-    await message.reply_text(t(message.from_user.id, "queue_list", count=len(q), items=items))
-
-
-# ================== BROADCAST (OWNER ONLY) ==================
-@bot.on_message(filters.command("broadcast") & filters.private)
-async def cmd_broadcast(client, message: Message):
-    user_id = message.from_user.id
-
-    if user_id != OWNER_ID:
-        await message.reply_text(t(user_id, "owner_only"))
-        return
-
-    if len(message.command) < 2:
-        await message.reply_text("Usage: /broadcast <message>")
-        return
-
-    text = message.text.split(maxsplit=1)[1]
-    status = await message.reply_text(t(user_id, "broadcast_start"))
-
-    ok, fail = 0, 0
-    async for dialog in client.get_dialogs():
-        try:
-            await client.send_message(dialog.chat.id, text)
-            ok += 1
-            await asyncio.sleep(0.05)
-        except Exception:
-            fail += 1
-
-    await status.edit_text(t(user_id, "broadcast_done", ok=ok, fail=fail))
-
-
-# ================== STARTUP ==================
-async def main():
-    if not API_ID or not API_HASH or not BOT_TOKEN or not SESSION_STRING:
-        raise SystemExit("❌ Missing required env vars: API_ID, API_HASH, BOT_TOKEN, SESSION_STRING")
-
-    print("🚀 Starting user client...")
-    await user.start()
-    print("🚀 Starting bot client...")
-    await bot.start()
-    print("🚀 Starting PyTgCalls...")
-    await call.start()
-    print("✅ Bot is running!")
-    await asyncio.Event().wait()
-
-
-if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except (KeyboardInterrupt, SystemExit):
-        print("👋 Bot stopped.")ge.reply_text(t(message.from_user.id, "error", err=str(e)))
-
-
-@bot.on_message(filters.command("skip") & filters.group)
-async def cmd_skip(client, message: Message):
-    chat_id = message.chat.id
-    if chat_id not in active:
-        await message.reply_text(t(message.from_user.id, "not_in_vc"))
-        return
-    await message.reply_text(t(message.from_user.id, "skipped"))
-    await play_next(chat_id)
-
-
-@bot.on_message(filters.command("stop") & filters.group)
-async def cmd_stop(client, message: Message):
-    chat_id = message.chat.id
-    try:
-        await call.leave_group_call(chat_id)
-    except Exception:
-        pass
-    active.discard(chat_id)
-    queue.pop(chat_id, None)
-    current.pop(chat_id, None)
-    await message.reply_text(t(message.from_user.id, "stopped"))
-
-
-@bot.on_message(filters.command("song") & filters.group)
-async def cmd_song(client, message: Message):
-    chat_id = message.chat.id
-    if chat_id not in current:
-        await message.reply_text(t(message.from_user.id, "no_playing"))
-        return
-    title, _ = current[chat_id]
-    await message.reply_text(t(message.from_user.id, "song_info", title=title))
-
-
-@bot.on_message(filters.command("queue") & filters.group)
-async def cmd_queue(client, message: Message):
-    chat_id = message.chat.id
-    q = queue.get(chat_id, [])
-    if not q:
-        await message.reply_text(t(message.from_user.id, "no_queue"))
-        return
-    items = "\n".join(f"{i+1}. {t[0]}" for i, t in enumerate(q[:20]))
-    await message.reply_text(t(message.from_user.id, "queue_list", count=len(q), items=items))
-
-
-# ================== BROADCAST (OWNER ONLY) ==================
-@bot.on_message(filters.command("broadcast") & filters.private)
-async def cmd_broadcast(client, message: Message):
-    user_id = message.from_user.id
-
-    if user_id != OWNER_ID:
-        await message.reply_text(t(user_id, "owner_only"))
-        return
-
-    if len(message.command) < 2:
-        await message.reply_text("Usage: /broadcast <message>")
-        return
-
-    text = message.text.split(maxsplit=1)[1]
-    status = await message.reply_text(t(user_id, "broadcast_start"))
-
-    ok, fail = 0, 0
-    async for dialog in client.get_dialogs():
-        try:
-            await client.send_message(dialog.chat.id, text)
-            ok += 1
-            await asyncio.sleep(0.05)
-        except Exception:
-            fail += 1
-
-    await status.edit_text(t(user_id, "broadcast_done", ok=ok, fail=fail))
-
-
-# ================== STARTUP ==================
-async def main():
-    if not API_ID or not API_HASH or not BOT_TOKEN or not SESSION_STRING:
-        raise SystemExit("❌ Missing required env vars: API_ID, API_HASH, BOT_TOKEN, SESSION_STRING")
-
-    print("🚀 Starting user client...")
-    await user.start()
-    print("🚀 Starting bot client...")
-    await bot.start()
-    print("🚀 Starting PyTgCalls...")
-    await call.start()
-    print("✅ Bot is running!")
-    await asyncio.Event().wait()
-
 
 if __name__ == "__main__":
     try:
