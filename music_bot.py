@@ -11,7 +11,7 @@ from pytgcalls.types import MediaStream, AudioQuality, Update, StreamEnded
 API_ID = int(os.environ.get("API_ID", "0"))
 API_HASH = os.environ.get("API_HASH", "")
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
-SESSION_STRING = os.environ.get("SESSION_STRING", "")
+SESSION_STRING = os.environ.get("SESSION_STRING", "").strip()
 OWNER_ID = int(os.environ.get("OWNER_ID", "0"))
 
 # ================== LOGGING ==================
@@ -321,6 +321,10 @@ async def cmd_broadcast(client, message: Message):
 async def main():
     if not API_ID or not API_HASH or not BOT_TOKEN or not SESSION_STRING:
         raise SystemExit("❌ Missing required env vars: API_ID, API_HASH, BOT_TOKEN, SESSION_STRING")
+    
+    # Session String ရဲ့ အရှည်ကို စစ်ဆေးခြင်း
+    if len(SESSION_STRING) < 200:
+        raise SystemExit(f"❌ SESSION_STRING က မပြည့်စုံပါဘူး။ လက်ရှိ အရှည်က {len(SESSION_STRING)} ပါ။ (အစကနေ အဆုံးထိ ပြန်ကူးယူပါ)")
 
     print("🚀 Starting user client...")
     await user.start()
